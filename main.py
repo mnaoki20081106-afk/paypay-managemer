@@ -54,8 +54,8 @@ class OtpRequest(BaseModel):
     @classmethod
     def digits_only(cls, v: str) -> str:
         v = v.strip()
-        if not v.isdigit() or not 4 <= len(v) <= 8:
-            raise ValueError("OTP must be 4-8 digits")
+        if not v.isdigit() or len(v) != 4:
+            raise ValueError("OTP must be 4 digits")
         return v
 
 

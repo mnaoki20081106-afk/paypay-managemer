@@ -306,7 +306,7 @@
         <span id="otp-phone-label"></span> に届いたSMSの認証コード（プレフィックス: <span id="otp-prefix-label" style="font-family:var(--mono);color:var(--yellow)"></span>）
       </div>
       <div class="otp-row">
-        <input type="number" id="otp-input" placeholder="0000" maxlength="8" oninput="this.value=this.value.replace(/\D/g,'')">
+        <input type="number" id="otp-input" placeholder="0000" maxlength="4" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)">
         <button class="btn btn-primary" id="otp-submit-btn" onclick="submitOtp()">送信</button>
         <button class="btn" onclick="cancelOtp()">キャンセル</button>
       </div>
@@ -579,8 +579,8 @@ async function submitLogin() {
 async function submitOtp() {
   if (!pendingOtpPhone) return;
   const otp = document.getElementById('otp-input').value.trim();
-  if (!otp || !/^\d{4,8}$/.test(otp)) {
-    toast('4〜8桁の数字を入力してください', 'error');
+  if (!otp || !/^\d{4}$/.test(otp)) {
+    toast('4桁の数字を入力してください', 'error');
     return;
   }
 
