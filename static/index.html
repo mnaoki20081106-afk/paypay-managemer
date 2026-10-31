@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayPay Manager</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #222535;
+    --border: #2e3248;
+    --accent: #e63c5c;
+    --accent2: #ff6b35;
+    --green: #22c55e;
+    --yellow: #eab308;
+    --red: #ef4444;
+    --muted: #6b7280;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --radius: 10px;
+    --mono: 'SF Mono', 'Fira Code', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+  }
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header .subtitle { color: var(--muted); font-size: 12px; }
+  .main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 16px;
+    display: grid;
+    gap: 24px;
+  }
+  .section-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .card-info { flex: 1; min-width: 0; }
+  .card-phone {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .card-meta { color: var(--text2); font-size: 12px; margin-top: 4px; }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge-green { background: rgba(34,197,94,.15); color: var(--green); }
+  .badge-yellow { background: rgba(234,179,8,.15); color: var(--yellow); }
+  .badge-red { background: rgba(239,68,68,.15); color: var(--red); }
+  .badge-muted { background: rgba(107,114,128,.15); color: var(--muted); }
+  .badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: background .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--border); }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover { background: #cc2f4d; border-color: #cc2f4d; }
+  .btn-danger { border-color: #7f1d1d; color: var(--red); }
+  .btn-danger:hover { background: rgba(239,68,68,.1); }
+  /* Add account panel */
+  .add-panel {
+    background: var(--surface2);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .add-btn-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 480px) { .form-grid { grid-template-columns: 1fr; } }
+  .form-field { display: flex; flex-direction: column; gap: 5px; }
+  .form-field label { font-size: 11px; color: var(--text2); font-weight: 500; }
+  .form-field input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+    transition: border-color .15s;
+    font-family: var(--mono);
+  }
+  .form-field input:focus { border-color: var(--accent); }
+  .form-actions { margin-top: 12px; display: flex; gap: 8px; }
+  /* OTP banner */
+  .otp-banner {
+    background: rgba(234,179,8,.08);
+    border: 1px solid rgba(234,179,8,.3);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .otp-title { font-size: 13px; font-weight: 600; color: var(--yellow); margin-bottom: 8px; }
+  .otp-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .otp-row input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-size: 16px;
+    letter-spacing: 0.15em;
+    width: 140px;
+    font-family: var(--mono);
+    outline: none;
+  }
+  .otp-row input:focus { border-color: var(--yellow); }
+  /* Payment section */
+  .payment-form { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; align-items: end; }
+  @media (max-width: 640px) { .payment-form { grid-template-columns: 1fr; } }
+  .payment-form select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+    font-family: var(--mono);
+  }
+  .payment-form select:focus { border-color: var(--accent); }
+  /* History table */
+  .history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .history-table th {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 11px;
+  }
+  .history-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid rgba(46,50,72,.5);
+    color: var(--text2);
+    font-family: var(--mono);
+  }
+  .history-table tr:last-child td { border-bottom: none; }
+  .history-table .td-status { font-family: inherit; }
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    max-width: 320px;
+    transform: translateY(120%);
+    transition: transform .25s ease;
+    z-index: 999;
+  }
+  #toast.show { transform: translateY(0); }
+  #toast.success { border-color: var(--green); color: var(--green); }
+  #toast.error { border-color: var(--red); color: var(--red); }
+  #toast.info { border-color: var(--yellow); color: var(--yellow); }
+  /* Spinner */
+  .spinner {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  /* Empty state */
+  .empty {
+    text-align: center;
+    padding: 32px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .divider { border: none; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>PayPay Manager</h1>
+    <div class="subtitle">アカウント管理・送金受取</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Accounts section -->
+  <div>
+    <div class="section-title">登録アカウント</div>
+    <div id="account-list">
+      <div class="empty">読み込み中…</div>
+    </div>
+
+    <!-- Add account -->
+    <div class="add-panel" style="margin-top:12px">
+      <div class="add-btn-row">
+        <span style="font-size:13px;color:var(--text2)">新しいアカウントを追加</span>
+        <button class="btn btn-primary" id="toggle-add-btn" onclick="toggleAddForm()">+ 追加</button>
+      </div>
+      <div id="add-form" style="display:none">
+        <hr class="divider" style="margin:10px 0">
+        <div class="form-grid">
+          <div class="form-field">
+            <label>電話番号</label>
+            <input type="tel" id="add-phone" placeholder="09012345678" autocomplete="off">
+          </div>
+          <div class="form-field">
+            <label>パスワード</label>
+            <input type="password" id="add-pass" placeholder="PayPayのパスワード" autocomplete="current-password">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" id="add-submit-btn" onclick="submitLogin()">ログイン</button>
+          <button class="btn" onclick="toggleAddForm()">キャンセル</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- OTP banner -->
+    <div class="otp-banner" id="otp-banner" style="display:none;margin-top:12px">
+      <div class="otp-title">📱 SMS認証コードを入力してください</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">
+        <span id="otp-phone-label"></span> に届いたSMSの認証コード（プレフィックス: <span id="otp-prefix-label" style="font-family:var(--mono);color:var(--yellow)"></span>）
+      </div>
+      <div class="otp-row">
+        <input type="number" id="otp-input" placeholder="0000" maxlength="8" oninput="this.value=this.value.replace(/\D/g,'')">
+        <button class="btn btn-primary" id="otp-submit-btn" onclick="submitOtp()">送信</button>
+        <button class="btn" onclick="cancelOtp()">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment receive section -->
+  <div>
+    <div class="section-title">送金リンク受取</div>
+    <div class="card">
+      <div class="payment-form">
+        <div class="form-field">
+          <label>受取アカウント</label>
+          <select id="pay-phone">
+            <option value="">-- 選択 --</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>PayPay送金リンク</label>
+          <input type="text" id="pay-link" placeholder="https://pay.paypay.ne.jp/..." style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:12px;font-family:var(--mono);outline:none;width:100%">
+        </div>
+        <div class="form-field">
+          <label>金額（円）</label>
+          <input type="number" id="pay-amount" placeholder="1000" min="1" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:13px;font-family:var(--mono);outline:none;width:100%">
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <button class="btn btn-primary" id="pay-btn" onclick="receivePayment()">受取実行</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment history -->
+  <div>
+    <div class="section-title">受取履歴</div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>注文ID</th>
+            <th>アカウント</th>
+            <th>金額</th>
+            <th>状態</th>
+            <th>日時</th>
+          </tr>
+        </thead>
+        <tbody id="history-body">
+          <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">読み込み中…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let pendingOtpPhone = null;
+let accounts = [];
+
+// ── Utilities ──────────────────────────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => el.className = '', 3500);
+}
+
+function setLoading(btnId, loading) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled = loading;
+  if (loading) btn._orig = btn.innerHTML;
+  btn.innerHTML = loading ? `<span class="spinner"></span>処理中…` : btn._orig;
+}
+
+function timeLeft(expiresAt) {
+  if (!expiresAt) return null;
+  const diff = expiresAt - Date.now() / 1000;
+  if (diff <= 0) return null;
+  const h = Math.floor(diff / 3600);
+  const m = Math.floor((diff % 3600) / 60);
+  if (h > 0) return `残り ${h}時間 ${m}分`;
+  return `残り ${m}分`;
+}
+
+function formatDatetime(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return d.toLocaleString('ja-JP', { month:'2-digit', day:'2-digit',
+    hour:'2-digit', minute:'2-digit' });
+}
+
+// ── API ────────────────────────────────────────────────────────────────────
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(path, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts,
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw { status: res.status, detail: body.detail || body };
+  return body;
+}
+
+// ── Render accounts ────────────────────────────────────────────────────────
+function renderAccounts(list) {
+  accounts = list;
+  const el = document.getElementById('account-list');
+
+  if (!list.length) {
+    el.innerHTML = '<div class="empty">登録済みのアカウントがありません</div>';
+    updatePayPhone(list);
+    return;
+  }
+
+  el.innerHTML = list.map(a => {
+    let badge, meta;
+    if (!a.registered) {
+      badge = `<span class="badge badge-muted">未登録</span>`;
+      meta = '認証情報なし';
+    } else if (a.otp_pending) {
+      badge = `<span class="badge badge-yellow">OTP待ち</span>`;
+      meta = 'SMS認証コード待機中';
+    } else if (a.valid) {
+      const left = timeLeft(a.expires_at);
+      badge = `<span class="badge badge-green">有効</span>`;
+      meta = left ? `${left}` : 'セッション有効';
+      if (!a.payment_ready) meta += ' · 送金受取不可（再ログイン推奨）';
+    } else if (a.registered) {
+      badge = `<span class="badge badge-red">期限切れ</span>`;
+      meta = '再ログインまたはトークン更新が必要';
+    }
+
+    const phone = escHtml(a.phone);
+    return `
+      <div class="card" style="margin-bottom:8px">
+        <div class="card-row">
+          <div class="card-info">
+            <div class="card-phone">${phone}</div>
+            <div class="card-meta">${meta}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            ${badge}
+            <div class="btn-row">
+              <button class="btn" onclick="refreshAccount('${phone}')" title="トークン更新">更新</button>
+              <button class="btn btn-danger" onclick="deleteAccount('${phone}')">削除</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  updatePayPhone(list);
+}
+
+function updatePayPhone(list) {
+  const sel = document.getElementById('pay-phone');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">-- 選択 --</option>'
+    + list.filter(a => a.valid && a.payment_ready)
+          .map(a => `<option value="${escHtml(a.phone)}">${escHtml(a.phone)}</option>`)
+          .join('');
+  if (current) sel.value = current;
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ── Load ───────────────────────────────────────────────────────────────────
+async function loadAccounts() {
+  try {
+    const list = await apiFetch('/api/accounts');
+    renderAccounts(list);
+  } catch {
+    document.getElementById('account-list').innerHTML =
+      '<div class="empty">取得に失敗しました</div>';
+  }
+}
+
+async function loadHistory() {
+  try {
+    const rows = await apiFetch('/api/payments');
+    const tbody = document.getElementById('history-body');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">履歴なし</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r => {
+      const statusMap = {
+        paid: '<span class="badge badge-green">受取完了</span>',
+        pending: '<span class="badge badge-yellow">保留中</span>',
+        review: '<span class="badge badge-red">要確認</span>',
+        attempted: '<span class="badge badge-muted">処理中</span>',
+      };
+      const st = statusMap[r.status] || `<span class="badge badge-muted">${escHtml(r.status)}</span>`;
+      return `<tr>
+        <td>${escHtml(r.order_id.substring(0,12))}…</td>
+        <td>${escHtml(r.phone)}</td>
+        <td>¥${Number(r.amount).toLocaleString()}</td>
+        <td class="td-status">${st}</td>
+        <td>${formatDatetime(r.created_at)}</td>
+      </tr>`;
+    }).join('');
+  } catch {
+    document.getElementById('history-body').innerHTML =
+      '<tr><td colspan="5" style="text-align:center;color:var(--muted)">取得に失敗</td></tr>';
+  }
+}
+
+// ── Add account ────────────────────────────────────────────────────────────
+function toggleAddForm() {
+  const f = document.getElementById('add-form');
+  const btn = document.getElementById('toggle-add-btn');
+  const visible = f.style.display !== 'none';
+  f.style.display = visible ? 'none' : 'block';
+  btn.textContent = visible ? '+ 追加' : '閉じる';
+}
+
+async function submitLogin() {
+  const phone = document.getElementById('add-phone').value.trim().replace(/-/g,'');
+  const pass  = document.getElementById('add-pass').value;
+  if (!phone || !pass) { toast('電話番号とパスワードを入力してください', 'error'); return; }
+
+  setLoading('add-submit-btn', true);
+  try {
+    const res = await apiFetch('/api/accounts/login', {
+      method: 'POST',
+      body: JSON.stringify({ phone, password: pass }),
+    });
+
+    if (res.status === 'otp_required') {
+      pendingOtpPhone = phone;
+      document.getElementById('otp-phone-label').textContent = phone;
+      document.getElementById('otp-prefix-label').textContent = res.otp_prefix || '';
+      document.getElementById('otp-banner').style.display = 'block';
+      document.getElementById('otp-input').value = '';
+      document.getElementById('otp-input').focus();
+      toggleAddForm();
+      toast(`OTP認証が必要です（プレフィックス: ${res.otp_prefix}）`, 'info');
+    } else {
+      toast('ログイン成功！', 'success');
+      toggleAddForm();
+      document.getElementById('add-phone').value = '';
+      document.getElementById('add-pass').value = '';
+      await loadAccounts();
+    }
+  } catch (e) {
+    const err = e.detail?.error || 'ログインに失敗しました';
+    const hint = {
+      bad_credentials: '電話番号またはパスワードが違います',
+      network_error: 'PayPayへの接続に失敗しました',
+      otp_validation_failed: 'OTP検証に失敗しました',
+    };
+    toast(hint[err] || err, 'error');
+  } finally {
+    setLoading('add-submit-btn', false);
+  }
+}
+
+async function submitOtp() {
+  if (!pendingOtpPhone) return;
+  const otp = document.getElementById('otp-input').value.trim();
+  if (!otp || !/^\d{4,8}$/.test(otp)) {
+    toast('4〜8桁の数字を入力してください', 'error');
+    return;
+  }
+
+  setLoading('otp-submit-btn', true);
+  try {
+    await apiFetch('/api/accounts/otp', {
+      method: 'POST',
+      body: JSON.stringify({ phone: pendingOtpPhone, otp }),
+    });
+    toast('OTP認証完了！アカウントを登録しました', 'success');
+    cancelOtp();
+    await loadAccounts();
+  } catch (e) {
+    const err = e.detail?.error || 'OTP認証に失敗しました';
+    toast(err === 'invalid_otp_format' ? '認証コードの形式が正しくありません' : err, 'error');
+  } finally {
+    setLoading('otp-submit-btn', false);
+  }
+}
+
+function cancelOtp() {
+  pendingOtpPhone = null;
+  document.getElementById('otp-banner').style.display = 'none';
+}
+
+// ── Account actions ─────────────────────────────────────────────────────────
+async function refreshAccount(phone) {
+  try {
+    const res = await apiFetch(`/api/accounts/${encodeURIComponent(phone)}/refresh`, { method: 'POST' });
+    if (res.status === 'otp_required') {
+      pendingOtpPhone = phone;
+      document.getElementById('otp-phone-label').textContent = phone;
+      document.getElementById('otp-prefix-label').textContent = res.otp_prefix || '';
+      document.getElementById('otp-banner').style.display = 'block';
+      document.getElementById('otp-input').value = '';
+      toast(`OTP認証が必要です（プレフィックス: ${res.otp_prefix}）`, 'info');
+    } else {
+      toast(`${phone} のトークンを更新しました`, 'success');
+      await loadAccounts();
+    }
+  } catch (e) {
+    toast(e.detail?.error || '更新に失敗しました', 'error');
+  }
+}
+
+async function deleteAccount(phone) {
+  if (!confirm(`${phone} を削除しますか？`)) return;
+  try {
+    await apiFetch(`/api/accounts/${encodeURIComponent(phone)}`, { method: 'DELETE' });
+    toast(`${phone} を削除しました`, 'success');
+    await loadAccounts();
+  } catch (e) {
+    toast('削除に失敗しました', 'error');
+  }
+}
+
+// ── Payment receive ─────────────────────────────────────────────────────────
+async function receivePayment() {
+  const phone  = document.getElementById('pay-phone').value;
+  const link   = document.getElementById('pay-link').value.trim();
+  const amount = parseInt(document.getElementById('pay-amount').value, 10);
+
+  if (!phone) { toast('受取アカウントを選択してください', 'error'); return; }
+  if (!link)  { toast('PayPay送金リンクを入力してください', 'error'); return; }
+  if (!amount || amount < 1) { toast('金額を入力してください', 'error'); return; }
+
+  setLoading('pay-btn', true);
+  try {
+    const res = await apiFetch('/api/payments/receive', {
+      method: 'POST',
+      body: JSON.stringify({ phone, link, amount }),
+    });
+    toast(`¥${amount.toLocaleString()} の受取が完了しました！`, 'success');
+    document.getElementById('pay-link').value = '';
+    document.getElementById('pay-amount').value = '';
+    await loadHistory();
+  } catch (e) {
+    const d = e.detail || {};
+    if (d.error === 'temporary_hold') {
+      toast(`一時保留: ${d.message}`, 'info');
+    } else {
+      toast(d.message || d.error || '受取に失敗しました', 'error');
+    }
+  } finally {
+    setLoading('pay-btn', false);
+  }
+}
+
+// ── Enter key support ────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (document.getElementById('otp-banner').style.display !== 'none'
+        && document.activeElement?.id === 'otp-input') {
+      submitOtp();
+    }
+  }
+});
+
+// ── Init ────────────────────────────────────────────────────────────────────
+(async () => {
+  await Promise.all([loadAccounts(), loadHistory()]);
+  setInterval(loadAccounts, 30000);
+})();
+</script>
+</body>
+</html>
