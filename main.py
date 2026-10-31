@@ -75,6 +75,11 @@ class ReceiveRequest(BaseModel):
 
 # ── API routes ────────────────────────────────────────────────────────────────
 
+@app.get("/api/health")
+async def api_health():
+    return {"ok": True}
+
+
 @app.get("/api/accounts")
 async def api_list_accounts():
     return paypay_auth.list_accounts()
