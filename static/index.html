@@ -369,6 +369,7 @@
 // ── State ──────────────────────────────────────────────────────────────────
 let pendingOtpPhone = null;
 let accounts = [];
+const balanceCache = {};
 
 // ── Utilities ──────────────────────────────────────────────────────────────
 function toast(msg, type = 'info') {
@@ -439,6 +440,8 @@ function renderAccounts(list) {
       badge = `<span class="badge badge-green">有効</span>`;
       meta = left ? `${left}` : 'セッション有効';
       if (!a.payment_ready) meta += ' · 送金受取不可（再ログイン推奨）';
+      const cached = balanceCache[a.phone];
+      if (cached != null) meta += ` · 残高 ¥${cached.toLocaleString()}`;
     } else if (a.registered) {
       badge = `<span class="badge badge-red">期限切れ</span>`;
       meta = '再ログインまたはトークン更新が必要';
@@ -455,6 +458,7 @@ function renderAccounts(list) {
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             ${badge}
             <div class="btn-row">
+              <button class="btn" onclick="fetchBalance('${phone}')" title="残高確認" id="bal-btn-${phone}">残高</button>
               <button class="btn" onclick="refreshAccount('${phone}')" title="トークン更新">更新</button>
               <button class="btn btn-danger" onclick="deleteAccount('${phone}')">削除</button>
             </div>
@@ -604,6 +608,24 @@ async function submitOtp() {
 function cancelOtp() {
   pendingOtpPhone = null;
   document.getElementById('otp-banner').style.display = 'none';
+}
+
+// ── Balance ──────────────────────────────────────────────────────────────────
+async function fetchBalance(phone) {
+  const btn = document.getElementById(`bal-btn-${phone}`);
+  if (btn) { btn.disabled = true; btn._orig = btn.innerHTML; btn.innerHTML = '…'; }
+  try {
+    const res = await apiFetch(`/api/accounts/${encodeURIComponent(phone)}/balance`);
+    balanceCache[phone] = res.balance;
+    toast(`${phone} の残高: ¥${res.balance.toLocaleString()}`, 'success');
+    renderAccounts(accounts);
+  } catch (e) {
+    const err = e.detail?.error || 'balance_error';
+    const msg = { session_expired: 'セッション切れ。再ログインしてください。', network_error: '通信エラー', api_error: 'PayPay APIエラー' };
+    toast(msg[err] || err, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = btn._orig || '残高'; }
+  }
 }
 
 // ── Account actions ─────────────────────────────────────────────────────────

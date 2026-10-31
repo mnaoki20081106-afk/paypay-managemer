@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, field_validator
 
 import paypay_auth
+import paypay_balance
 import paypay_payment
 import storage
 
@@ -119,6 +120,20 @@ async def api_refresh(phone: str):
         return result
     except paypay_auth.PayPayAuthError as e:
         raise HTTPException(400, detail={"error": e.reason})
+
+
+@app.get("/api/accounts/{phone}/balance")
+async def api_balance(phone: str):
+    phones = storage.list_phones()
+    if phone not in phones:
+        raise HTTPException(404, "Account not found")
+    try:
+        result = await paypay_balance.get_balance(phone)
+        return {"phone": phone, "balance": result["balance"]}
+    except paypay_balance.BalanceError as e:
+        raise HTTPException(400, detail={"error": e.reason})
+    except paypay_auth.PayPayAuthError as e:
+        raise HTTPException(401, detail={"error": e.reason})
 
 
 @app.delete("/api/accounts/{phone}")
