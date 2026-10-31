@@ -430,74 +430,6 @@
   /* ── Divider ── */
   hr.divider { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
 
-  /* ── SMS number card ── */
-  .sms-num-row {
-    display: flex;
-    align-items: center;
-    padding: 14px 16px;
-    gap: 12px;
-  }
-  .sms-num-row + .sms-num-row { border-top: 1px solid var(--border); }
-  .sms-num-icon {
-    width: 40px; height: 40px;
-    border-radius: 50%;
-    background: rgba(0,122,255,.1);
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    font-size: 18px;
-  }
-  .sms-num-body { flex: 1; min-width: 0; }
-  .sms-num-phone {
-    font-family: var(--mono);
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .sms-num-meta { font-size: 12px; color: var(--text2); margin-top: 2px; }
-  .sms-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 22px; height: 22px;
-    padding: 0 6px;
-    border-radius: 999px;
-    background: var(--blue);
-    color: #fff;
-    font-size: 11px;
-    font-weight: 700;
-    flex-shrink: 0;
-  }
-  .sms-badge-zero { background: var(--border); color: var(--text3); }
-  .sms-actions { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
-  .sms-text-box {
-    margin: 0 16px 12px;
-    background: var(--bg);
-    border-radius: var(--radius-sm);
-    padding: 10px 12px;
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--text);
-    border: 1px solid var(--border);
-    word-break: break-all;
-    line-height: 1.6;
-  }
-  .pill-blue { background: rgba(0,122,255,.1); border-color: rgba(0,122,255,.2); color: var(--blue); }
-  .pill-blue:hover { background: rgba(0,122,255,.18); }
-
-  /* ── SMS buy form ── */
-  .sms-status-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border);
-  }
-  .sms-status-label { font-size: 13px; color: var(--text2); }
-  .sms-balance-val { font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--text); }
-
   /* ── Cold start overlay ── */
   #cold-overlay {
     position: fixed;
@@ -672,48 +604,6 @@
     </div>
   </div>
 
-  <!-- SMS virtual numbers -->
-  <div>
-    <div class="section-label">仮想SMS番号</div>
-    <div class="card" id="sms-card">
-      <!-- status bar -->
-      <div class="sms-status-bar">
-        <span class="sms-status-label" id="sms-config-label">確認中…</span>
-        <span class="sms-balance-val" id="sms-balance-val"></span>
-      </div>
-      <!-- buy form -->
-      <div id="sms-buy-area" style="display:none">
-        <div class="form-panel" style="border-top:none">
-          <div class="form-row">
-            <div class="form-field" style="flex:2">
-              <label>サービス（PayPay等）</label>
-              <select class="pay-select" id="sms-service-sel">
-                <option value="">読み込み中…</option>
-              </select>
-            </div>
-            <div class="form-field" style="flex:1">
-              <label>国コード</label>
-              <input class="form-input" type="number" id="sms-country" value="182" min="1" max="99999">
-            </div>
-          </div>
-          <div class="form-actions" style="margin-top:10px">
-            <button class="btn-primary" id="sms-buy-btn" onclick="buyNumber()">番号を発行</button>
-            <button class="btn-ghost" id="sms-refresh-btn" onclick="loadSmsNumbers()">更新</button>
-          </div>
-        </div>
-      </div>
-      <!-- unconfigured notice -->
-      <div id="sms-unconfigured" style="display:none">
-        <div class="empty" style="padding:20px 16px">
-          <div class="empty-icon">📵</div>
-          SMSV_ACCESS_TOKEN が未設定です<br>
-          <span style="font-size:11px;color:var(--text3)">Renderの環境変数に設定してください</span>
-        </div>
-      </div>
-      <!-- active numbers list -->
-      <div id="sms-num-list"></div>
-    </div>
-  </div>
 
 </div>
 
@@ -1067,147 +957,6 @@ async function receivePayment() {
   }
 }
 
-// ── SMS ──────────────────────────────────────────────────────────────────────
-let smsNumbers = [];
-let smsExpanded = {}; // orderId -> bool (showing SMS texts)
-
-async function loadSmsStatus() {
-  try {
-    const s = await apiFetch('/api/sms/status');
-    const label = document.getElementById('sms-config-label');
-    const balEl = document.getElementById('sms-balance-val');
-    if (!s.configured) {
-      label.textContent = '未設定';
-      document.getElementById('sms-buy-area').style.display = 'none';
-      document.getElementById('sms-unconfigured').style.display = 'block';
-      return;
-    }
-    label.textContent = s.balance != null ? '残高' : '設定済み';
-    balEl.textContent = s.balance != null ? `¥${parseFloat(s.balance).toLocaleString()}` : '';
-    document.getElementById('sms-unconfigured').style.display = 'none';
-    document.getElementById('sms-buy-area').style.display = 'block';
-  } catch {
-    document.getElementById('sms-config-label').textContent = '取得失敗';
-  }
-}
-
-async function loadSmsServices() {
-  const sel = document.getElementById('sms-service-sel');
-  if (!sel) return;
-  try {
-    const services = await apiFetch('/api/sms/services');
-    if (!services.length) {
-      sel.innerHTML = '<option value="">サービスなし</option>';
-      return;
-    }
-    sel.innerHTML = services.map(s =>
-      `<option value="${escHtml(s.service)}:${s.country}">${escHtml(s.name)} (¥${parseFloat(s.cost).toLocaleString()})</option>`
-    ).join('');
-  } catch {
-    sel.innerHTML = '<option value="">取得失敗</option>';
-  }
-}
-
-async function loadSmsNumbers() {
-  const el = document.getElementById('sms-num-list');
-  try {
-    const nums = await apiFetch('/api/sms/numbers');
-    smsNumbers = nums;
-    renderSmsNumbers(nums);
-  } catch (e) {
-    if (e.status !== 503) {
-      el.innerHTML = '<div class="empty">番号の取得に失敗しました</div>';
-    }
-  }
-}
-
-function renderSmsNumbers(nums) {
-  const el = document.getElementById('sms-num-list');
-  if (!nums.length) {
-    el.innerHTML = '<div class="empty" style="border-top:1px solid var(--border)"><div class="empty-icon">📱</div>発行済みの番号がありません</div>';
-    return;
-  }
-  el.innerHTML = nums.map(n => {
-    const expanded = smsExpanded[n.order_id];
-    const smsHtml = (expanded && n.sms && n.sms.length)
-      ? n.sms.map(t => `<div class="sms-text-box">${escHtml(t)}</div>`).join('')
-      : (expanded ? '<div class="sms-text-box" style="color:var(--text3)">SMSなし</div>' : '');
-    const expiry = n.expires_at ? (() => {
-      const d = new Date(n.expires_at);
-      const diff = (d - Date.now()) / 1000;
-      if (diff <= 0) return '期限切れ';
-      const m = Math.floor(diff / 60);
-      return m > 60 ? `${Math.floor(m/60)}時間${m%60}分` : `${m}分`;
-    })() : '不明';
-    return `
-      <div class="sms-num-row">
-        <div class="sms-num-icon">📱</div>
-        <div class="sms-num-body">
-          <div class="sms-num-phone">${escHtml(n.phone)}</div>
-          <div class="sms-num-meta">${escHtml(n.service_key || 'unknown')} · 残り${expiry}</div>
-        </div>
-        <span class="sms-badge ${n.sms_count === 0 ? 'sms-badge-zero' : ''}">${n.sms_count}</span>
-        <div class="sms-actions">
-          <button class="pill pill-blue" onclick="pollSms('${escHtml(n.order_id)}')">SMS確認</button>
-          <button class="pill pill-red" onclick="cancelNumber('${escHtml(n.order_id)}', '${escHtml(n.service_key || '')}')">キャンセル</button>
-        </div>
-      </div>
-      ${smsHtml}
-    `;
-  }).join('');
-}
-
-async function pollSms(orderId) {
-  try {
-    const res = await apiFetch(`/api/sms/numbers/${encodeURIComponent(orderId)}/sms`);
-    const idx = smsNumbers.findIndex(n => n.order_id === orderId);
-    if (idx >= 0) {
-      smsNumbers[idx].sms = res.sms;
-      smsNumbers[idx].sms_count = res.count;
-    }
-    smsExpanded[orderId] = true;
-    renderSmsNumbers(smsNumbers);
-    if (!res.count) toast('まだSMSが届いていません', 'info');
-    else toast(`${res.count}件のSMSを受信しています`, 'success');
-  } catch (e) {
-    toast(e.detail?.error || 'SMS取得に失敗しました', 'error');
-  }
-}
-
-async function cancelNumber(orderId, serviceKey) {
-  if (!confirm('この番号をキャンセルしますか？')) return;
-  try {
-    await apiFetch(`/api/sms/numbers/${encodeURIComponent(orderId)}`, { method: 'DELETE' });
-    toast('番号をキャンセルしました', 'success');
-    await loadSmsNumbers();
-  } catch (e) {
-    toast(e.detail?.error || 'キャンセルに失敗しました', 'error');
-  }
-}
-
-async function buyNumber() {
-  const sel = document.getElementById('sms-service-sel');
-  const val = sel.value;
-  if (!val) { toast('サービスを選択してください', 'error'); return; }
-  const [serviceKey, countryStr] = val.split(':');
-  const countryId = parseInt(document.getElementById('sms-country').value, 10) || parseInt(countryStr, 10) || 182;
-
-  setLoading('sms-buy-btn', true, '発行中…');
-  try {
-    const res = await apiFetch('/api/sms/numbers', {
-      method: 'POST',
-      body: JSON.stringify({ service_key: serviceKey, country_id: countryId }),
-    });
-    toast(`番号を発行しました: ${res.phone}`, 'success');
-    await Promise.all([loadSmsStatus(), loadSmsNumbers()]);
-  } catch (e) {
-    const err = e.detail?.error || '発行に失敗しました';
-    toast(e.status === 402 ? '残高不足です' : err, 'error');
-  } finally {
-    setLoading('sms-buy-btn', false, '番号を発行');
-  }
-}
-
 // ── Enter key ────────────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && document.getElementById('otp-banner').style.display !== 'none'
@@ -1242,10 +991,8 @@ async function waitForServer() {
 // ── Init ────────────────────────────────────────────────────────────────────
 (async () => {
   await waitForServer();
-  await Promise.all([loadAccounts(), loadHistory(), loadSmsStatus()]);
-  await Promise.all([loadSmsServices(), loadSmsNumbers()]);
+  await Promise.all([loadAccounts(), loadHistory()]);
   setInterval(loadAccounts, 30000);
-  setInterval(() => { loadSmsStatus(); loadSmsNumbers(); }, 30000);
 })();
 </script>
 </body>
